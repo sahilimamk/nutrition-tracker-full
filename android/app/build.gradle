@@ -1,0 +1,32 @@
+plugins {
+    id("com.android.application")
+}
+
+android {
+    namespace = "com.sahil.nutritiontracker"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.sahil.nutritiontracker"
+        minSdk = 21
+        targetSdk = 34
+        // Bump versionCode by 1 for every release you ship.
+        // Android only installs an update if its versionCode is HIGHER
+        // than the installed one. versionName is what users see.
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+        debug {
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}

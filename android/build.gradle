@@ -1,0 +1,4 @@
+// Top-level build file. Open this folder in Android Studio and it handles the rest.
+plugins {
+    id("com.android.application") version "8.2.2" apply false
+}

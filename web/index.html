@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#43a047">
+<title>Nutrition Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="top">
+  <h1>🥗 Nutrition Tracker</h1>
+  <div class="date-nav">
+    <button id="dPrev" aria-label="Previous day">‹</button>
+    <span id="dLabel">Today</span>
+    <button id="dNext" aria-label="Next day">›</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ============ DIARY ============ -->
+<section id="scr-diary" class="screen on">
+  <div class="card">
+    <div class="cal-hero">
+      <div class="ring">
+        <svg width="96" height="96" viewBox="0 0 96 96">
+          <circle cx="48" cy="48" r="40" fill="none" stroke="#edf0f3" stroke-width="10"/>
+          <circle id="ringFg" cx="48" cy="48" r="40" fill="none" stroke="#43a047" stroke-width="10" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+        </svg>
+        <div class="num"><b id="calLeft">0</b><span>kcal left</span></div>
+      </div>
+      <div style="flex:1">
+        <div class="cal-stats">
+          <div><span class="mut">Eaten</span><b id="calEaten">0</b></div>
+          <div><span class="mut">Burned</span><b id="calBurned">0</b></div>
+          <div><span class="mut">Goal</span><b id="calGoalV">2000</b></div>
+        </div>
+        <div style="margin-top:10px">
+          <div class="macro"><div class="lbl"><span>Protein</span><span id="pLbl">0 / 160g</span></div><div class="bar"><i id="pBar" style="background:#4a90d9"></i></div></div>
+          <div class="macro"><div class="lbl"><span>Carbs</span><span id="cLbl">0 / 195g</span></div><div class="bar"><i id="cBar" style="background:#f0a13c"></i></div></div>
+          <div class="macro"><div class="lbl"><span>Fat</span><span id="fLbl">0 / 65g</span></div><div class="bar"><i id="fBar" style="background:#9b59b6"></i></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="streak zero" id="streakLine"></div>
+  </div>
+
+  <div id="meals"></div>
+
+  <div class="card">
+    <h2>💧 Water <span class="mut" id="waterLbl">0 / 3000 ml</span></h2>
+    <div class="water-row">
+      <div class="water-glass">🥛</div>
+      <div class="bar" style="flex:1"><i id="waterBar" style="background:#4a90d9"></i></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn ghost" data-water="250" style="margin:0">+250 ml</button>
+      <button class="btn ghost" data-water="500" style="margin:0">+500 ml</button>
+      <button class="btn ghost" id="waterReset" style="margin:0">Reset</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🏃 Exercise <button class="add-btn" id="exAdd">+ Add</button></h2>
+    <div id="exList"><div class="empty">No exercise logged today.</div></div>
+  </div>
+</section>
+
+<!-- ============ WEIGHT ============ -->
+<section id="scr-weight" class="screen">
+  <div class="card">
+    <h2>⚖️ Weight</h2>
+    <div class="row">
+      <input id="wInput" type="number" step="0.1" inputmode="decimal" placeholder="kg (e.g. 82.9)">
+      <button class="btn" id="wAdd" style="margin:6px 0; flex:.6">Log</button>
+    </div>
+    <div class="mut">Weigh yourself at the gym on arrival, before training. Judge the 7-day average, not single days.</div>
+  </div>
+  <div class="card">
+    <h2>📈 Trend <span class="mut">last 30 weigh-ins</span></h2>
+    <canvas class="chart" id="wChart"></canvas>
+    <div class="legend"><span><i style="background:#43a047"></i>7-day average</span><span><i style="background:#4a90d9"></i>weigh-in</span></div>
+  </div>
+  <div class="card"><h2>History</h2><div id="wHist" class="hist"><div class="empty">No weigh-ins yet.</div></div></div>
+</section>
+
+<!-- ============ REPORT ============ -->
+<section id="scr-report" class="screen">
+  <div class="card">
+    <h2>📊 Weekly report</h2>
+    <div id="repBody"><div class="empty">Log some food to see your week.</div></div>
+  </div>
+</section>
+
+<!-- ============ SETTINGS ============ -->
+<section id="scr-settings" class="screen">
+  <div class="card">
+    <h2>🎯 Daily goals</h2>
+    <button class="btn ghost" id="obRerun">🧭 Recalculate with the wizard</button>
+    <label class="fl">Calories (kcal)</label><input id="sCal" type="number" inputmode="numeric">
+    <div class="row">
+      <div><label class="fl">Protein (g)</label><input id="sP" type="number" inputmode="numeric"></div>
+      <div><label class="fl">Carbs (g)</label><input id="sC" type="number" inputmode="numeric"></div>
+      <div><label class="fl">Fat (g)</label><input id="sF" type="number" inputmode="numeric"></div>
+    </div>
+    <label class="fl">Water goal (ml)</label><input id="sW" type="number" inputmode="numeric">
+    <button class="btn" id="sSave">Save goals</button>
+  </div>
+  <div class="card">
+    <h2>📦 Data</h2>
+    <p class="mut">Everything is stored only on this device (browser local storage). No account, no server.</p>
+    <button class="btn ghost" id="exportBtn">Export my data (JSON)</button>
+    <button class="btn danger" id="wipeBtn">Delete all my data</button>
+  </div>
+  <div class="card"><p class="mut" style="margin:0">Food data: Open Food Facts (open database). Barcode scanning uses your camera only to read the code.</p></div>
+</section>
+
+</div>
+
+<nav class="bottom">
+  <button data-scr="scr-diary" class="on"><span class="ic">📓</span>Diary</button>
+  <button data-scr="scr-weight"><span class="ic">⚖️</span>Weight</button>
+  <button data-scr="scr-report"><span class="ic">📊</span>Report</button>
+  <button data-scr="scr-settings"><span class="ic">⚙️</span>Settings</button>
+</nav>
+
+<!-- ============ ONBOARDING ============ -->
+<div class="sheet" id="obSheet">
+  <div class="pn">
+    <div class="ob-steps" id="obSteps"></div>
+    <div id="obBody"></div>
+    <div class="ob-nav">
+      <button class="btn ghost" id="obBack" style="flex:.5">← Back</button>
+      <button class="btn" id="obNext" style="flex:1">Next →</button>
+    </div>
+    <button class="btn ghost" id="obSkip">Skip for now</button>
+  </div>
+</div>
+
+<!-- ============ ADD FOOD SHEET ============ -->
+<div class="sheet" id="foodSheet">
+  <div class="bk" data-close></div>
+  <div class="pn">
+    <h2 style="margin:0 0 4px">Add food <span class="mut" id="fsMeal" style="font-size:.8rem"></span></h2>
+    <div class="tabs">
+      <button data-ftab="search" class="on">🔎 Search</button>
+      <button data-ftab="barcode">📷 Barcode</button>
+      <button data-ftab="quick">⚡ Quick add</button>
+      <button data-ftab="mine">⭐ My foods</button>
+      <button data-ftab="templates">📋 Templates</button>
+    </div>
+
+    <div id="ft-search">
+      <input id="fq" placeholder="Search food (e.g. paneer, oats, chicken)">
+      <button class="btn" id="fGo">Search</button>
+      <div id="fRes"></div>
+    </div>
+
+    <div id="ft-barcode" class="hidden">
+      <div id="camwrap"><video id="cam" playsinline muted></video><div class="scanline"></div></div>
+      <button class="btn" id="camStart">Start camera scan</button>
+      <button class="btn ghost hidden" id="camStop">Stop camera</button>
+      <div class="row" style="margin-top:6px">
+        <input id="bcInput" inputmode="numeric" placeholder="or type barcode">
+        <button class="btn" id="bcGo" style="margin:6px 0; flex:.6">Look up</button>
+      </div>
+      <div id="bcRes"></div>
+    </div>
+
+    <div id="ft-quick" class="hidden">
+      <input id="qName" placeholder="Food name">
+      <div class="row">
+        <div><label class="fl">Calories</label><input id="qKcal" type="number" inputmode="decimal" placeholder="kcal"></div>
+        <div><label class="fl">Protein g</label><input id="qP" type="number" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <div class="row">
+        <div><label class="fl">Carbs g</label><input id="qC" type="number" inputmode="decimal" placeholder="0"></div>
+        <div><label class="fl">Fat g</label><input id="qF" type="number" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <button class="btn" id="qAdd">Add to diary</button>
+    </div>
+
+    <div id="ft-mine" class="hidden"><div id="mineList"><div class="empty">Save foods with ⭐ when adding them.</div></div></div>
+
+    <div id="ft-templates" class="hidden"><div id="tplList"><div class="empty">No templates yet.</div></div></div>
+
+    <!-- confirm serving -->
+    <div id="ft-confirm" class="hidden">
+      <h3 id="cfName" style="margin:6px 0"></h3>
+      <div class="mut" id="cfBrand"></div>
+      <div class="nutri-grid">
+        <div><b id="cfK">0</b><span>kcal</span></div>
+        <div><b id="cfP">0</b><span>protein</span></div>
+        <div><b id="cfC">0</b><span>carbs</span></div>
+        <div><b id="cfF">0</b><span>fat</span></div>
+      </div>
+      <div class="qty-ctl">
+        <button id="qMinus">−</button>
+        <input id="qQty" type="number" inputmode="decimal" value="100">
+        <button id="qPlus">+</button>
+        <span class="mut" id="qUnit">g</span>
+      </div>
+      <div class="row">
+        <button class="btn ghost" id="cfStar" style="flex:.5">⭐ Save</button>
+        <button class="btn" id="cfAdd" style="flex:1">Add to diary</button>
+      </div>
+      <button class="btn ghost" id="cfBack">← Back to results</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ EXERCISE SHEET ============ -->
+<div class="sheet" id="exSheet">
+  <div class="bk" data-close></div>
+  <div class="pn">
+    <h2 style="margin-top:0">Log exercise</h2>
+    <input id="exName" placeholder="e.g. Running, Weights">
+    <div class="row">
+      <div><label class="fl">Minutes</label><input id="exMin" type="number" inputmode="numeric" placeholder="30"></div>
+      <div><label class="fl">Calories burned</label><input id="exKcal" type="number" inputmode="numeric" placeholder="200"></div>
+    </div>
+    <button class="btn" id="exSave">Save</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/storage.js"></script>
+<script src="js/nutrition.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/diary.js"></script>
+<script src="js/foods.js"></script>
+<script src="js/water.js"></script>
+<script src="js/exercise.js"></script>
+<script src="js/weight.js"></script>
+<script src="js/insights.js"></script>
+<script src="js/onboarding.js"></script>
+<script src="js/goals.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

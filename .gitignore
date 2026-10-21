@@ -1,0 +1,72 @@
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor / IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.tmp
+*.orig
+
+# Local environment and secrets
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+*.keystore
+*.secret
+
+# Android project generated files
+android/.gradle/
+android/**/build/
+android/**/captures/
+android/.idea/
+android/*.iml
+android/**/.idea/
+android/**.iml
+android/local.properties
+**/local.properties
+
+# APK / AAB bundles
+*.apk
+*.aab
+
+# Java / Gradle cache
+.gradle/
+**/.gradle/
+**/build/
+**/out/
+
+# Node / web tooling
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python cache (if used in tooling)
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs and temp files
+*.log
+*.tmp
+*.temp
+
+# Project-specific generated content
+android/app/build/
+android/app/release/
+android/.cxx/
+
+# Local app data / browser cache if ever created here
+*.sqlite
+*.db
+
+# Keep only source files in Git
+# If you generate screenshots, exports, or local notes, add them here as needed

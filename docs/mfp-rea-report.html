@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyFitnessPal — REA Reverse Engineering Report</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --line:#262b36; --txt:#e8eaf0; --mut:#9aa3b2; --acc:#6cb8ff; --grn:#7bd88f; --amb:#ffcf6b; }
+  * { box-sizing:border-box; }
+  body { background:var(--bg); color:var(--txt); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; margin:0; padding:24px; line-height:1.55; }
+  .wrap { max-width:900px; margin:0 auto; }
+  h1 { font-size:1.7rem; margin:0 0 4px; }
+  h2 { font-size:1.15rem; margin:28px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+  h3 { font-size:1rem; margin:18px 0 8px; color:var(--acc); }
+  p.sub { color:var(--mut); margin:0 0 20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin:12px 0; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .stat b { display:block; font-size:1.4rem; color:var(--acc); }
+  .stat span { color:var(--mut); font-size:.82rem; }
+  code, .mono { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.85em; background:#0b0d12; padding:2px 6px; border-radius:5px; border:1px solid var(--line); word-break:break-all; }
+  pre { background:#0b0d12; border:1px solid var(--line); border-radius:10px; padding:14px; overflow-x:auto; font-size:.82rem; line-height:1.5; }
+  table { width:100%; border-collapse:collapse; font-size:.88rem; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--mut); font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; }
+  .tag { display:inline-block; font-size:.72rem; padding:2px 8px; border-radius:20px; margin:2px 4px 2px 0; border:1px solid var(--line); color:var(--mut); }
+  .tag.hot { color:var(--grn); border-color:#2c4a35; }
+  .tag.warn { color:var(--amb); border-color:#4a3f2c; }
+  .arch { font-size:.85rem; }
+  .arch .layer { padding:10px 14px; border:1px solid var(--line); border-radius:8px; margin:8px 0; background:#12151c; }
+  .arch .arrow { text-align:center; color:var(--mut); font-size:.8rem; }
+  footer { color:var(--mut); font-size:.78rem; margin-top:32px; border-top:1px solid var(--line); padding-top:12px; }
+  a { color:var(--acc); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>🔍 MyFitnessPal — REA Reverse Engineering Report</h1>
+<p class="sub">Generated with <b>REA</b> (Reverse Engineer Anything) · static analysis of the production web bundles · 12 Oct 2026</p>
+
+<div class="grid">
+  <div class="stat"><b>16</b><span>JS bundles parsed</span></div>
+  <div class="stat"><b>807</b><span>modules recovered</span></div>
+  <div class="stat"><b>15,815</b><span>code relations mapped</span></div>
+  <div class="stat"><b>2,940</b><span>findings with evidence</span></div>
+  <div class="stat"><b>605k</b><span>AST nodes visited</span></div>
+  <div class="stat"><b>0</b><span>parse failures</span></div>
+</div>
+
+<h2>1 · What the app actually is</h2>
+<div class="card">
+  <p>MyFitnessPal's website is a <b>Next.js</b> app (build <span class="mono">YdrvCJAG-JMnj1tNPXRgj</span>). It is <b>not</b> a monolith — the frontend is a thin client over a set of backend microservices. The Next.js <span class="mono">/api/*</span> routes are just <b>proxies</b>; the real logic lives in backend services addressed through environment-configured hosts.</p>
+  <p><span class="tag hot">Next.js frontend</span><span class="tag hot">API-route proxies</span><span class="tag hot">microservices backend</span><span class="tag warn">no public API docs</span></p>
+</div>
+
+<h2>2 · Architecture (as recovered)</h2>
+<div class="arch">
+  <div class="layer"><b>Browser</b> — React/Next.js SPA · 16 webpack chunks · largest bundle <span class="mono">_app</span> (1.8 MB)</div>
+  <div class="arrow">↓ HTTPS, same-origin <span class="mono">/api/*</span> calls</div>
+  <div class="layer"><b>Next.js API-route proxy layer</b> — <span class="mono">/api/mainapp/*</span> · <span class="mono">/api/mealapp/v2/*</span> · <span class="mono">/api/services/*</span> · <span class="mono">/api/auth/*</span></div>
+  <div class="arrow">↓ internal hosts (from env config)</div>
+  <div class="layer"><b>Backend services</b><br>
+    <span class="mono">MFP_API_HOST/v2</span> — core API (users, foods, diary)<br>
+    <span class="mono">MAINAPP_HOST_INTERNAL</span> — main app service<br>
+    <span class="mono">MEAL_APP_HOST_INTERNAL</span> — meal plans, recipes, grocery lists<br>
+    <span class="mono">IDENTITY_HOST</span> — identity / accounts<br>
+    <span class="mono">MFP_PUBLIC_API_HOST</span> — public API<br>
+    <span class="mono">NEXTAUTH_URL</span> — auth (NextAuth: credentials + Facebook)</div>
+</div>
+
+<h2>3 · API surface map</h2>
+<p class="sub">Every route below was recovered from the shipped bundles with evidence. Grouped by the proxy prefix the frontend actually calls.</p>
+
+<h3>Auth &amp; identity — <span class="mono">/api/auth/*</span>, <span class="mono">/api/idm/*</span></h3>
+<div class="card"><table>
+<tr><th>Route</th><th>Purpose</th></tr>
+<tr><td><span class="mono">/api/auth/signin</span>, <span class="mono">/signout</span>, <span class="mono">/session</span></td><td>NextAuth session flow</td></tr>
+<tr><td><span class="mono">/api/auth/signin/facebook</span></td><td>Facebook OAuth</td></tr>
+<tr><td><span class="mono">/api/auth/refresh-token-data</span></td><td>Token refresh</td></tr>
+<tr><td><span class="mono">/api/idm/user-exists</span>, <span class="mono">/api/idm/user-with-consents</span></td><td>Identity checks</td></tr>
+<tr><td><span class="mono">/api/account/password_reset</span></td><td>Password reset</td></tr>
+</table></div>
+
+<h3>Food diary — <span class="mono">/api/services/*</span> + <span class="mono">/api/mainapp/*</span></h3>
+<div class="card"><table>
+<tr><th>Route</th><th>Purpose</th></tr>
+<tr><td><span class="mono">/diary/read_day</span>, <span class="mono">/diary/read_diary</span></td><td>Load a day's diary</td></tr>
+<tr><td><span class="mono">/food/diary</span>, <span class="mono">/food/quick-add</span>, <span class="mono">/food/submit</span></td><td>Log food entries</td></tr>
+<tr><td><span class="mono">/food/mine</span>, <span class="mono">/foods/mine</span>, <span class="mono">/api/services/users/foods/mine</span></td><td>User's custom foods</td></tr>
+<tr><td><span class="mono">/diary/water</span>, <span class="mono">/diary/read_water</span></td><td>Water tracking</td></tr>
+<tr><td><span class="mono">/diary/nutrient_goals</span>, <span class="mono">/diary/copy_meal</span></td><td>Goals + meal copy</td></tr>
+<tr><td><span class="mono">/api/services/top_foods</span></td><td>Popular foods</td></tr>
+<tr><td><span class="mono">/api/services/users/meals/mine</span></td><td>Saved meals</td></tr>
+<tr><td><span class="mono">/api/user-measurements/measurements</span></td><td>Weight/body measurements</td></tr>
+</table></div>
+
+<h3>Exercise — <span class="mono">/exercises/*</span></h3>
+<div class="card"><table>
+<tr><th>Route</th><th>Purpose</th></tr>
+<tr><td><span class="mono">/exercises/search</span>, <span class="mono">/exercises/lookup</span></td><td>Exercise database search</td></tr>
+<tr><td><span class="mono">/exercise/diary</span>, <span class="mono">/exercises/calories_burned/</span></td><td>Log + calorie math</td></tr>
+</table></div>
+
+<h3>Meal plans &amp; recipes (premium) — <span class="mono">/api/mealapp/v2/*</span></h3>
+<div class="card"><table>
+<tr><th>Route</th><th>Purpose</th></tr>
+<tr><td><span class="mono">/api/mealapp/v2/mealapp/plan/share/</span></td><td>Share meal plan</td></tr>
+<tr><td><span class="mono">/api/mealapp/v2/mealapp/recipe/print</span></td><td>Recipe print view</td></tr>
+<tr><td><span class="mono">/api/mealapp/v2/mealapp/grocery/shareList/</span></td><td>Grocery list sharing</td></tr>
+</table></div>
+
+<h3>Premium billing — Stripe</h3>
+<div class="card"><table>
+<tr><th>Route</th><th>Purpose</th></tr>
+<tr><td><span class="mono">/api/services/stripe/subscriptions</span></td><td>Premium subscriptions</td></tr>
+<tr><td><span class="mono">/api/services/stripe/portal-session</span>, <span class="mono">/prices</span>, <span class="mono">/customers</span></td><td>Billing portal + pricing</td></tr>
+<tr><td><span class="mono">/api/services/stripe/truemed/payment-token</span></td><td>TruMed HSA/FSA payments</td></tr>
+</table></div>
+
+<h2>4 · What this means for a clone</h2>
+<div class="card">
+<ul>
+<li><b>Don't clone the frontend chunk-for-chunk</b> — clone the <i>service boundaries</i>. The winning structure is: thin web client → API gateway → small services (diary, foods, meal plans, billing).</li>
+<li><b>Auth is boring on purpose</b> — NextAuth with credentials + Facebook. Nothing custom to reverse here; use any auth library.</li>
+<li><b>The food database is the moat, not the code.</b> The bundles reference a <span class="mono">/v2</span> food API, but the data behind it (millions of user-verified entries) isn't in the client. For a personal clone, Open Food Facts + USDA FoodData Central cover the same ground for free.</li>
+<li><b>Premium = Stripe + feature flags.</b> Subscriptions, portal sessions, and TruMed are all standard Stripe — the "premium" features are just gated routes, not special technology.</li>
+<li><b>Meal plans are a separate service</b> (<span class="mono">MEAL_APP_HOST</span>) — you can build diary + food search first and add meal planning later without touching the core.</li>
+</ul>
+</div>
+
+<h2>5 · How REA did it</h2>
+<div class="card">
+<pre>npx rea-agents setup                                  # register REA
+# bundles fetched from web-assets.myfitnesspal.com
+npx rea-agents analyze-javascript-application \
+  /tmp/mfp-app/js --format json                        # 23 MB evidence graph
+# → 807 modules · 15,815 relations · 2,940 findings</pre>
+<p>REA parsed every bundle into an AST, recovered module/import relationships, and emitted each finding with its evidence and confidence — no guessing. Live browser observation (real network traffic) is possible too once the sandbox network approval lands.</p>
+</div>
+
+<footer>Evidence: <span class="mono">/tmp/mfp-analysis.json</span> (23 MB, REA evidence envelope) · Bundles: <span class="mono">/tmp/mfp-app/js/</span> · REA 6.4.0 · Note: static analysis only — no credentials, sessions, or user data were touched.</footer>
+
+</div>
+</body>
+</html>
